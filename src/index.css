@@ -1,0 +1,25 @@
+@tailwind base;@tailwind components;@tailwind utilities;
+:root{--bg:240 6% 10%;--surface:240 6% 13%;--surface-2:240 5% 15%;--surface-3:240 6% 18%;--surface-4:240 6% 21%;
+--border:0 0% 100%;--border-mid:0 0% 100%;--border-alpha:0.07;--border-mid-alpha:0.12;--border-hi:7 44% 55%;
+--accent:7 44% 55%;--accent-dim-alpha:0.10;--accent-mid-alpha:0.20;--accent-border-alpha:0.25;--accent-active-alpha:0.25;--accent-pulse-alpha:0.35;
+--text-hi:240 5% 96%;--text-mid:240 5% 72%;--text-lo:240 5% 57%;color-scheme:dark}
+body{@apply bg-bg text-hi font-sans antialiased;font-size:14px}
+:focus-visible{outline:2px solid hsl(var(--accent));outline-offset:2px}
+.skel{background:hsl(var(--surface-3));animation:skp 1.4s ease-in-out infinite}
+@keyframes skp{50%{opacity:.5}}
+@keyframes inR{from{transform:translateX(28px);opacity:0}}
+@keyframes inB{from{transform:translateY(28px);opacity:0}}
+@keyframes pop{from{transform:scale(.96);opacity:0}}
+@keyframes fade{from{opacity:0}}
+.a-pop{animation:pop .16s ease-out}.a-fade{animation:fade .15s}
+.a-sheet{animation:inR .2s ease-out}
+@media (max-width:639px){.a-sheet{animation:inB .2s ease-out}}
+.btn{@apply inline-flex items-center gap-1.5 h-8 px-3 rounded border border-linemid bg-s2 text-hi text-[13px] font-medium hover:bg-s3 disabled:opacity-40 disabled:pointer-events-none}
+.btn-pri{@apply bg-accent border-accent text-bg hover:bg-accent/90}
+.chip{@apply whitespace-nowrap inline-flex items-center gap-1 h-7 px-2.5 rounded border border-line bg-s2 text-mid text-xs hover:bg-s3}
+.chip[aria-pressed=true]{@apply bg-accentdim border-accentline text-hi}
+.ibtn{@apply inline-flex items-center justify-center w-7 h-7 rounded text-mid hover:bg-s4 hover:text-hi}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+.a-pm{animation:pop .16s ease-out}
+@media (max-width:639px){.a-pm{animation:inB .2s ease-out}}
