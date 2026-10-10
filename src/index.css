@@ -23,3 +23,6 @@ body{@apply bg-bg text-hi font-sans antialiased;font-size:14px}
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 .a-pm{animation:pop .16s ease-out}
 @media (max-width:639px){.a-pm{animation:inB .2s ease-out}}
+.a-dd{animation:dd .14s ease-out}
+.a-out{animation:dd .12s ease-in reverse forwards}
+@keyframes dd{from{opacity:0;transform:translateY(-4px) scale(.98)}}
