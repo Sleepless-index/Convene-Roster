@@ -1,5 +1,5 @@
 import {useState,useEffect,useMemo,useRef,forwardRef,useLayoutEffect} from 'react'
-import {Plus,X,Search,Check,Trash2,Download,Copy,FileUp,ImageDown,ArrowUp,ChevronDown,Users,LayoutGrid,ListFilter} from 'lucide-react'
+import {Plus,X,Search,Check,Trash2,Download,Copy,FileUp,ImageDown,Loader2,Users,LayoutGrid,ListFilter} from 'lucide-react'
 import {toCanvas} from 'html-to-image'
 import {BASE,ELEMENTS,ElIcon,useLS,useDialog,useScrollLock,Badge,Weapon,Rarity,Seq,Stars,Portrait,parseImport,normalize} from './lib.jsx'
 
@@ -8,7 +8,7 @@ const Empty=({onClick,label='Add character'})=><li><button onClick={onClick} ari
 function Card({c,onOpen,onRemove,onMenu,removeLabel}){
  const t=useRef()
  return <li className="group relative a-pop">
-  <button onClick={e=>onOpen(c,e.currentTarget.getBoundingClientRect())} onContextMenu={e=>{e.preventDefault();onMenu(c,e.clientX,e.clientY)}}
+  <button data-card onClick={e=>onOpen(c,e.currentTarget.getBoundingClientRect(),e.currentTarget)} onContextMenu={e=>{e.preventDefault();onMenu(c,e.clientX,e.clientY)}}
    onTouchStart={e=>{const p=e.touches[0];t.current=setTimeout(()=>onMenu(c,p.clientX,p.clientY),550)}} onTouchEnd={()=>clearTimeout(t.current)} onTouchMove={()=>clearTimeout(t.current)}
    aria-label={`${c.name}, ${c.rarity} star ${c.element} ${c.weapon}, resonance chain S${c.s}. Edit`} className="block w-full text-left rounded-md border border-line bg-s2 hover:border-linemid overflow-hidden">
    <div className="relative aspect-[4/5] bg-s3"><Portrait c={c} kind="role"/><span className="absolute top-1.5 left-1.5 flex flex-col gap-1"><Badge e={c.element}/><Weapon w={c.weapon}/></span><span className="absolute top-1.5 right-1.5"><Seq s={c.s}/></span><Stars n={c.rarity} size={17} cls="pt-4"/></div>
@@ -19,40 +19,8 @@ function Card({c,onOpen,onRemove,onMenu,removeLabel}){
 }
 const SkelCard=()=><li><div className="rounded-md border border-line bg-s2 overflow-hidden"><div className="skel aspect-[4/5]"/><div className="p-2 space-y-1.5"><div className="skel h-3 w-3/4 rounded"/><div className="skel h-3 w-1/3 rounded"/></div></div></li>
 const WEAPONS=['Broadblade','Gauntlets','Pistols','Rectifier','Sword']
-const cmp={added:()=>0,name:(a,b)=>a.name.localeCompare(b.name),rarity:(a,b)=>a.rarity-b.rarity,element:(a,b)=>ELEMENTS.indexOf(a.element)-ELEMENTS.indexOf(b.element),weapon:(a,b)=>a.weapon.localeCompare(b.weapon),seq:(a,b)=>a.s-b.s}
-const SORTS=[['added','Added'],['name','Name'],['rarity','Rarity'],['element','Element'],['weapon','Weapon'],['seq','Sequence']]
 
 const GRID='grid gap-2.5 grid-cols-[repeat(auto-fill,minmax(112px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(136px,1fr))]'
-
-const DIRL={added:['Oldest','Newest'],name:['A–Z','Z–A'],rarity:['Low–High','High–Low'],element:['Asc','Desc'],weapon:['A–Z','Z–A'],seq:['Low–High','High–Low']}
-
-// Custom select: keyboard (arrows, Home/End, Enter/Space, Esc, type-ahead), open/close animation, listbox semantics.
-function Dropdown({label,value,options,onChange,prefix=''}){
- const[open,setOpen]=useState(false),[closing,setClosing]=useState(false),[hi,setHi]=useState(0),ref=useRef(),btn=useRef()
- const id=useMemo(()=>'dd'+Math.random().toString(36).slice(2,7),[]),idx=Math.max(0,options.findIndex(o=>o[0]===value))
- const close=(focus=true)=>{setOpen(false);setClosing(true);setTimeout(()=>setClosing(false),120);focus&&btn.current?.focus()}
- const pick=i=>{onChange(options[i][0]);close()}
- useEffect(()=>{if(!open)return;const d=e=>{if(!ref.current.contains(e.target))close(false)};document.addEventListener('mousedown',d);return()=>document.removeEventListener('mousedown',d)},[open])
- const key=e=>{
-  if(!open){if(['ArrowDown','ArrowUp','Enter',' '].includes(e.key)){e.preventDefault();setHi(idx);setClosing(false);setOpen(true)}return}
-  const n=options.length
-  if(e.key==='ArrowDown'){e.preventDefault();setHi(h=>(h+1)%n)}
-  else if(e.key==='ArrowUp'){e.preventDefault();setHi(h=>(h-1+n)%n)}
-  else if(e.key==='Home'){e.preventDefault();setHi(0)}
-  else if(e.key==='End'){e.preventDefault();setHi(n-1)}
-  else if(e.key==='Enter'||e.key===' '){e.preventDefault();pick(hi)}
-  else if(e.key==='Escape'){e.preventDefault();e.stopPropagation();close()}
-  else if(e.key==='Tab')close(false)
-  else if(e.key.length===1){const i=options.findIndex(o=>o[1].toLowerCase().startsWith(e.key.toLowerCase()));if(i>=0)setHi(i)}}
- return <div ref={ref} className="relative">
-  <button ref={btn} type="button" role="combobox" aria-label={`${label}: ${options[idx][1]}`} aria-haspopup="listbox" aria-expanded={open} aria-controls={id} aria-activedescendant={open?`${id}-${hi}`:undefined}
-   onClick={()=>open?close():(setHi(idx),setClosing(false),setOpen(true))} onKeyDown={key} className="btn">
-   <span className="text-lo">{prefix}</span>{options[idx][1]}<ChevronDown size={14} aria-hidden="true" className={`text-lo transition-transform duration-150 ${open?'rotate-180':''}`}/></button>
-  {(open||closing)&&<ul id={id} role="listbox" aria-label={label} className={`absolute left-0 top-full mt-1 z-30 min-w-full w-44 bg-s3 border border-linemid rounded-md p-1 ${open?'a-dd':'a-out'}`}>
-   {options.map(([k,l],i)=><li key={k} id={`${id}-${i}`} role="option" aria-selected={k===value} onMouseEnter={()=>setHi(i)} onMouseDown={e=>e.preventDefault()} onClick={()=>pick(i)}
-    className={`h-8 px-2 rounded flex items-center justify-between gap-3 text-[13px] cursor-pointer ${i===hi?'bg-s4 text-hi':'text-mid'}`}>{l}{k===value&&<Check size={14} className="text-accent" aria-hidden="true"/>}</li>)}</ul>}
- </div>
-}
 
 function Tile({c,sel,dis,cap,label,onClick}){
  return <li><button aria-pressed={sel} aria-disabled={dis||undefined} aria-label={label} onClick={()=>!dis&&onClick()} className={`w-full text-left rounded-md p-1 border-2 transition-colors ${sel?'border-accent bg-accentdim':dis?'border-transparent opacity-50 cursor-default':'border-transparent hover:bg-s2'}`}>
@@ -87,7 +55,7 @@ function FilterPop({rect,rf,rtog,onClear,onClose}){
  return <div ref={ref} role="dialog" aria-label="Filter roster" tabIndex={-1} style={{'--t':rect.bottom+6+'px','--l':l+'px'}}
   className="fixed z-30 bg-s1 border border-linemid rounded-md p-3 space-y-3 sm:w-[308px] sm:top-[var(--t)] sm:left-[var(--l)] max-sm:inset-x-0 max-sm:bottom-0 max-sm:rounded-b-none max-sm:p-4 max-sm:pb-8 a-pm">
   <div className="flex items-center justify-between"><h2 className="font-semibold text-[14px]">Filter</h2><div className="flex items-center gap-1"><button className="chip" onClick={onClear}>Clear all</button><button className="ibtn" onClick={onClose} aria-label="Close filters"><X size={16}/></button></div></div>
-  <Sec t="Rarity">{[4,5].map(n=><button key={n} className="chip" aria-pressed={rf.rar.includes(n)} aria-label={`${n} star`} onClick={()=>rtog('rar',n)}>{n}*</button>)}</Sec>
+  <Sec t="Rarity">{[4,5].map(n=><button key={n} className="chip" aria-pressed={rf.rar.includes(n)} aria-label={`${n} star`} onClick={()=>rtog('rar',n)}><Rarity n={n} size={12}/></button>)}</Sec>
   <Sec t="Element">{ELEMENTS.map(e=><button key={e} className="chip" aria-pressed={rf.el.includes(e)} onClick={()=>rtog('el',e)}><ElIcon e={e}/>{e}</button>)}</Sec>
   <Sec t="Weapon">{WEAPONS.map(w=><button key={w} className="chip" aria-pressed={rf.wp.includes(w)} onClick={()=>rtog('wp',w)}><img src={BASE+`assets/weapons/${w}.webp`} alt="" draggable={false} className="w-4 h-4 object-contain"/>{w}</button>)}</Sec>
  </div>
@@ -95,7 +63,7 @@ function FilterPop({rect,rf,rtog,onClear,onClose}){
 
 function Edit({c,rect,onS,onClose}){
  const ref=useRef();useDialog(ref,onClose)
- useEffect(()=>{const d=e=>{if(!ref.current.contains(e.target))onClose()};document.addEventListener('mousedown',d);return()=>document.removeEventListener('mousedown',d)},[])
+ useEffect(()=>{const d=e=>{if(!ref.current.contains(e.target)&&!e.target.closest('[data-card]'))onClose()};document.addEventListener('mousedown',d);return()=>document.removeEventListener('mousedown',d)},[])
  const l=Math.min(Math.max(rect.left+rect.width/2-130,8),innerWidth-268),t=rect.bottom+170>innerHeight?Math.max(8,rect.top-170):rect.bottom+6
  return <div ref={ref} role="dialog" aria-label={`Edit ${c.name}`} tabIndex={-1} style={{'--t':t+'px','--l':l+'px'}}
   className="fixed z-40 bg-s1 border border-linemid p-3 rounded-md sm:w-[260px] sm:top-[var(--t)] sm:left-[var(--l)] max-sm:inset-x-0 max-sm:bottom-0 max-sm:rounded-b-none max-sm:p-4 max-sm:pb-8 a-pm">
@@ -178,22 +146,22 @@ const Sheet=forwardRef(({items,tdata,layout,group,view,head},ref)=>{
 })
 
 function Export({items,view,teams,onClose,say}){
- const[layout,setLayout]=useLS('wr:layout','compact'),[five,setFive]=useLS('wr:five',true),[group,setGroup]=useLS('wr:group',false),[player,setPlayer]=useLS('wr:player',{name:'',uid:''}),[ready,setReady]=useState(false),[scale,setScale]=useState(.5),[h,setH]=useState(600),[busy,setBusy]=useState(false),[done,setDone]=useState(null),tm=useRef()
+ const[layout,setLayout]=useLS('wr:layout','compact'),[five,setFive]=useLS('wr:five',true),[group,setGroup]=useLS('wr:group',false),[player,setPlayer]=useLS('wr:player',{name:'',uid:''}),[ready,setReady]=useState(false),[scale,setScale]=useState(.5),[h,setH]=useState(600),[busy,setBusy]=useState(null),[done,setDone]=useState(null),tm=useRef()
  const sheet=useRef(),wrap=useRef(),list=view==='teams'?[]:five?items.filter(c=>c.rarity===5):items,has=view==='teams'?teams.length>0:list.length>0
  useEffect(()=>()=>clearTimeout(tm.current),[])
  useEffect(()=>{setReady(false);const t=setTimeout(()=>setReady(true),450);return()=>clearTimeout(t)},[layout,five,group,view])
  useLayoutEffect(()=>{const a=new ResizeObserver(()=>setScale(wrap.current.clientWidth/1200)),b=new ResizeObserver(()=>setH(sheet.current.offsetHeight));a.observe(wrap.current);b.observe(sheet.current);return()=>{a.disconnect();b.disconnect()}},[])
  const blob=type=>toCanvas(sheet.current,{pixelRatio:2,cacheBust:true,backgroundColor:'#17171a'}).then(cv=>new Promise(r=>cv.toBlob(r,type,.95)))
  const flash=k=>{setDone(k);clearTimeout(tm.current);tm.current=setTimeout(()=>setDone(null),2000)}
- const dl=async()=>{setBusy(true);const b=await blob('image/webp'),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='wuwa-roster.webp';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),4000);say('Roster exported as WebP');flash('dl');setBusy(false)}
- const cp=async()=>{setBusy(true);try{await navigator.clipboard.write([new ClipboardItem({'image/png':blob('image/png')})]);say('Roster image copied to clipboard');flash('cp')}catch{say('Copy failed. Use Download WebP instead.');flash('fail')}setBusy(false)}
+ const dl=async()=>{setBusy('dl');const b=await blob('image/webp'),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='wuwa-roster.webp';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),4000);say('Roster exported as WebP');flash('dl');setBusy(null)}
+ const cp=async()=>{setBusy('cp');try{await navigator.clipboard.write([new ClipboardItem({'image/png':blob('image/png')})]);say('Roster image copied to clipboard');flash('cp')}catch{say('Copy failed. Use Download WebP instead.');flash('fail')}setBusy(null)}
  return <Dialog label="Export roster" onClose={onClose} w="max-w-4xl">
   <div className="p-4 space-y-3">
    <div className="flex flex-wrap items-center justify-between gap-2"><div role="radiogroup" aria-label="Export layout" className="flex flex-wrap gap-1.5">
      {[['compact','Compact'],['spacious','Spacious']].map(([k,l])=><button key={k} role="radio" aria-checked={layout===k} onClick={()=>setLayout(k)} className={`chip ${layout===k?'!bg-accentdim !border-accentline !text-hi':''}`}>{l}</button>)}
      <button className="chip disabled:opacity-40 disabled:pointer-events-none" aria-pressed={five&&view!=='teams'} disabled={view==='teams'} title={view==='teams'?'Not available in teams view':undefined} onClick={()=>setFive(!five)}>Only 5*</button>
      <button className="chip disabled:opacity-40 disabled:pointer-events-none" aria-pressed={group&&view!=='teams'} disabled={view==='teams'} title={view==='teams'?'Not available in teams view':undefined} onClick={()=>setGroup(!group)}>Group by element</button></div>
-    <div className="flex gap-2 max-sm:w-full"><button className={`btn max-sm:flex-1 justify-center min-w-[11.5rem] ${done==='cp'?'!border-accentline !bg-accentdim':''}`} onClick={cp} disabled={!ready||busy||!has}>{done==='cp'?<><Check size={15} aria-hidden="true"/>Copied!</>:done==='fail'?<>Copy failed</>:<><Copy size={15} aria-hidden="true"/>Copy to clipboard</>}</button><button className="btn btn-pri max-sm:flex-1 justify-center min-w-[11.5rem]" onClick={dl} disabled={!ready||busy||!has}>{done==='dl'?<><Check size={15} aria-hidden="true"/>Downloaded</>:<><Download size={15} aria-hidden="true"/>Download WebP</>}</button></div></div>
+    <div className="flex gap-2 max-sm:w-full"><button className={`btn max-sm:flex-1 justify-center sm:min-w-[11.5rem] ${done==='cp'?'!border-accentline !bg-accentdim':''} ${busy==='cp'?'!opacity-100':''}`} onClick={cp} disabled={!ready||!!busy||!has} aria-busy={busy==='cp'}>{busy==='cp'?<><Loader2 size={15} className="animate-spin" aria-hidden="true"/>Copying…</>:done==='cp'?<><Check size={15} aria-hidden="true"/>Copied!</>:done==='fail'?<>Copy failed</>:<><Copy size={15} aria-hidden="true"/>Copy<span className="max-sm:hidden"> to clipboard</span></>}</button><button className={`btn btn-pri max-sm:flex-1 justify-center sm:min-w-[11.5rem] ${busy==='dl'?'!opacity-100':''}`} onClick={dl} disabled={!ready||!!busy||!has} aria-busy={busy==='dl'}>{busy==='dl'?<><Loader2 size={15} className="animate-spin" aria-hidden="true"/>Downloading…</>:done==='dl'?<><Check size={15} aria-hidden="true"/>Downloaded</>:<><Download size={15} aria-hidden="true"/>Download<span className="max-sm:hidden"> WebP</span></>}</button></div></div>
    <div className="grid grid-cols-2 gap-2 max-w-md max-sm:max-w-none">
     <div><label htmlFor="pn" className="sr-only">Player name</label><input id="pn" maxLength={24} value={player.name} onChange={e=>setPlayer({...player,name:e.target.value})} placeholder="Player name" autoComplete="off" className="w-full h-8 px-2.5 rounded border border-linemid bg-s2 text-sm placeholder:text-lo"/></div>
     <div><label htmlFor="pu" className="sr-only">UID</label><input id="pu" maxLength={12} inputMode="numeric" value={player.uid} onChange={e=>setPlayer({...player,uid:e.target.value.replace(/\D/g,'')})} placeholder="UID" autoComplete="off" className="w-full h-8 px-2.5 rounded border border-linemid bg-s2 text-sm placeholder:text-lo"/></div></div>
@@ -204,15 +172,14 @@ function Export({items,view,teams,onClose,say}){
 }
 
 export default function App(){
- const[chars,setChars]=useState(null),[roster,setRoster]=useLS('wr:roster',[]),[f,setF]=useLS('wr:filters',{q:'',rar:[],el:[]}),[sort,setSort]=useLS('wr:sort',{key:'added',dir:'asc'}),[view,setView]=useLS('wr:view','owned'),[teams,setTeams]=useLS('wr:teams',[[null,null,null],[null,null,null],[null,null,null]]),[slot,setSlot]=useState(null),[rf,setRf]=useLS('wr:rf',{rar:[],el:[],wp:[]})
+ const[chars,setChars]=useState(null),[roster,setRoster]=useLS('wr:roster',[]),[f,setF]=useLS('wr:filters',{q:'',rar:[],el:[]}),[view,setView]=useLS('wr:view','owned'),[teams,setTeams]=useLS('wr:teams',[[null,null,null],[null,null,null],[null,null,null]]),[slot,setSlot]=useState(null),[rf,setRf]=useLS('wr:rf',{rar:[],el:[],wp:[]})
  const[panel,setPanel]=useState(null),[edit,setEdit]=useState(null),[menu,setMenu]=useState(null),[msg,setMsg]=useState('')
  useEffect(()=>{Promise.all([fetch(BASE+'characters.json').then(r=>r.json()),new Promise(r=>setTimeout(r,600))]).then(([d])=>setChars(d.map(normalize))).catch(()=>setChars([]))},[])
  useEffect(()=>{if(!menu)return;const c=()=>setMenu(null),k=e=>e.key==='Escape'&&c();addEventListener('click',c);addEventListener('keydown',k);return()=>{removeEventListener('click',c);removeEventListener('keydown',k)}},[menu])
  useEffect(()=>{const ids=new Set(roster.map(r=>r.id));setTeams(ts=>{let ch=false;const n=ts.map(t=>t.map(id=>id!=null&&!ids.has(id)?(ch=true,null):id));return ch?n:ts})},[roster])
  const byId=useMemo(()=>Object.fromEntries((chars||[]).map(c=>[c.id,c])),[chars])
  const items=roster.map(r=>({...byId[r.id],s:r.s})).filter(c=>c.id),owned=new Set(roster.map(r=>r.id)),loading=!chars,itemById=Object.fromEntries(items.map(c=>[c.id,c]))
- const d=sort.dir==='asc'?1:-1
- const sorted=items.map((c,i)=>({...c,_i:i})).sort((a,b)=>sort.key==='added'?(a._i-b._i)*d:(cmp[sort.key](a,b)*d||a.name.localeCompare(b.name)))
+ const sorted=[...items].sort((a,b)=>b.s-a.s||b.rarity-a.rarity||a.name.localeCompare(b.name))
  const fc=rf.rar.length+rf.el.length+rf.wp.length,active=fc>0,[fp,setFp]=useState(null)
  const shown=sorted.filter(c=>(!rf.rar.length||rf.rar.includes(c.rarity))&&(!rf.el.length||rf.el.includes(c.element))&&(!rf.wp.length||rf.wp.includes(c.weapon)))
  const rtog=(k,v)=>setRf({...rf,[k]:rf[k].includes(v)?rf[k].filter(x=>x!==v):[...rf[k],v]})
@@ -220,7 +187,7 @@ export default function App(){
  const add=c=>{setRoster(r=>r.some(x=>x.id===c.id)?r:[...r,{id:c.id,s:0}]);say(`${c.name} added`)}
  const remove=c=>{setRoster(r=>r.filter(x=>x.id!==c.id));setEdit(null);say(`${c.name} removed`)}
  const apply=list=>{setRoster(list);setPanel(null);say(`Imported ${list.length} characters`)}
- const open=(c,rect)=>setEdit({id:c.id,rect}),ed=edit&&items.find(c=>c.id===edit.id)
+ const open=(c,rect,el)=>setEdit(e=>e&&e.el===el?null:{id:c.id,rect,el}),ed=edit&&items.find(c=>c.id===edit.id)
  const card=c=><Card key={c.id} c={c} onOpen={open} onRemove={remove} onMenu={(c,x,y)=>setMenu({c,x,y})}/>
  const openAdd=()=>setPanel('add'),toggle=c=>owned.has(c.id)?remove(c):add(c)
  const clearSlot=(ti,si)=>{setTeams(ts=>ts.map((t,i)=>i===ti?t.map((x,k)=>k===si?null:x):t));say(`Removed from team ${ti+1}`)}
@@ -238,8 +205,6 @@ export default function App(){
     <button className="btn btn-pri" onClick={openAdd} aria-label="Add character"><Plus size={15} aria-hidden="true"/><span className="max-sm:sr-only">Add character</span></button></div></div></header>
   <main className="max-w-6xl mx-auto px-4 py-5">
    {view==='owned'&&<div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
-    <Dropdown label="Sort by" prefix="Sort: " value={sort.key} options={SORTS} onChange={k=>setSort({key:k,dir:['rarity','seq'].includes(k)?'desc':'asc'})}/>
-    <button className="btn" onClick={()=>setSort({...sort,dir:sort.dir==='asc'?'desc':'asc'})} aria-label={`Sort order: ${DIRL[sort.key][sort.dir==='asc'?0:1]}. Click to reverse`} title="Reverse sort order"><ArrowUp size={15} aria-hidden="true" className={`transition-transform duration-200 ${sort.dir==='desc'?'rotate-180':''}`}/><span className="max-sm:sr-only">{DIRL[sort.key][sort.dir==='asc'?0:1]}</span></button>
     <button data-filter-trigger className="btn" aria-haspopup="dialog" aria-expanded={!!fp} onClick={e=>fp?setFp(null):setFp(e.currentTarget.getBoundingClientRect())}><ListFilter size={15} aria-hidden="true"/>Filter{fc>0&&<span className="min-w-4 h-4 px-1 rounded-full bg-accent text-bg text-[11px] font-semibold grid place-items-center" aria-label={`${fc} active`}>{fc}</span>}</button>
     {active&&<button className="chip" onClick={()=>setRf({rar:[],el:[],wp:[]})}><X size={12} aria-hidden="true"/>Clear filters</button>}
     {active&&<span className="text-xs text-lo" role="status">{shown.length} of {items.length}</span>}</div>}
