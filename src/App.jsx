@@ -10,8 +10,8 @@ function Card({c,onOpen,onRemove,onMenu,removeLabel}){
  return <li className="group relative a-pop">
   <button data-card onClick={e=>onOpen(c,e.currentTarget.getBoundingClientRect(),e.currentTarget)} onContextMenu={e=>{e.preventDefault();onMenu(c,e.clientX,e.clientY)}}
    onTouchStart={e=>{const p=e.touches[0];t.current=setTimeout(()=>onMenu(c,p.clientX,p.clientY),550)}} onTouchEnd={()=>clearTimeout(t.current)} onTouchMove={()=>clearTimeout(t.current)}
-   aria-label={`${c.name}, ${c.rarity} star ${c.element} ${c.weapon}, resonance chain S${c.s}. Edit`} className="block w-full text-left rounded-md border border-line bg-s2 hover:border-linemid overflow-hidden">
-   <div className="relative aspect-[4/5] bg-s3"><Portrait c={c} kind="role"/><span className="absolute top-1.5 left-1.5 flex flex-col gap-1"><Badge e={c.element}/><Weapon w={c.weapon}/></span><span className="absolute top-1.5 right-1.5"><Seq s={c.s}/></span><Stars n={c.rarity} size={17} cls="pt-4"/></div>
+   aria-label={`${c.name}, ${c.rarity} star ${c.element} ${c.weapon}, resonance chain S${c.s}, weapon rank R${c.r}. Edit`} className="block w-full text-left rounded-md border border-line bg-s2 hover:border-linemid overflow-hidden">
+   <div className="relative aspect-[4/5] bg-s3"><Portrait c={c} kind="role"/><span className="absolute top-1.5 left-1.5 flex flex-col gap-1"><Badge e={c.element}/><Weapon w={c.weapon}/></span><span className="absolute top-1.5 right-1.5"><Seq s={c.s} r={c.r}/></span><Stars n={c.rarity} size={17} cls="pt-4"/></div>
    <div className="px-2 py-2 text-center truncate text-[13px] font-medium">{c.name}</div>
   </button>
   <button onClick={()=>onRemove(c)} aria-label={removeLabel||`Remove ${c.name}`} className="ibtn absolute bottom-[42px] right-1.5 bg-bg/80 border border-line opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"><Trash2 size={14}/></button>
@@ -61,17 +61,24 @@ function FilterPop({rect,rf,rtog,onClear,onClose}){
  </div>
 }
 
-function Edit({c,rect,onS,onClose}){
+function Edit({c,el,onS,onClose}){
  const ref=useRef();useDialog(ref,onClose)
  useEffect(()=>{const d=e=>{if(!ref.current.contains(e.target)&&!e.target.closest('[data-card]'))onClose()};document.addEventListener('mousedown',d);return()=>document.removeEventListener('mousedown',d)},[])
- const l=Math.min(Math.max(rect.left+rect.width/2-130,8),innerWidth-268),t=rect.bottom+170>innerHeight?Math.max(8,rect.top-170):rect.bottom+6
- return <div ref={ref} role="dialog" aria-label={`Edit ${c.name}`} tabIndex={-1} style={{'--t':t+'px','--l':l+'px'}}
-  className="fixed z-40 bg-s1 border border-linemid p-3 rounded-md sm:w-[260px] sm:top-[var(--t)] sm:left-[var(--l)] max-sm:inset-x-0 max-sm:bottom-0 max-sm:rounded-b-none max-sm:p-4 max-sm:pb-8 a-pm">
+ // Anchor to the card's live position (document coordinates), so it scrolls with the card and follows it when a change re-sorts the roster.
+ const place=()=>{const r=el.getBoundingClientRect(),l=Math.min(Math.max(r.left+r.width/2-130,8),innerWidth-268)+scrollX,t=(r.bottom+250>innerHeight?Math.max(8,r.top-250):r.bottom+6)+scrollY;ref.current.style.setProperty('--l',l+'px');ref.current.style.setProperty('--t',t+'px')}
+ useLayoutEffect(place)
+ useEffect(()=>{addEventListener('resize',place);return()=>removeEventListener('resize',place)},[])
+ return <div ref={ref} role="dialog" aria-label={`Edit ${c.name}`} tabIndex={-1}
+  className="fixed sm:absolute z-40 bg-s1 border border-linemid p-3 rounded-md sm:w-[260px] sm:top-[var(--t)] sm:left-[var(--l)] max-sm:inset-x-0 max-sm:bottom-0 max-sm:rounded-b-none max-sm:p-4 max-sm:pb-8 a-pm">
   <div className="flex items-center gap-2 mb-3"><Badge e={c.element}/><Weapon w={c.weapon}/><div className="min-w-0 flex-1 space-y-1"><div className="truncate font-medium">{c.name}</div><Rarity n={c.rarity}/></div>
    <button className="ibtn" onClick={onClose} aria-label="Close"><X size={16}/></button></div>
   <div id="rc" className="text-xs text-lo mb-1.5">Resonance Chain</div>
   <div role="radiogroup" aria-labelledby="rc" className="grid grid-cols-7 gap-1">
-   {[0,1,2,3,4,5,6].map(n=><button key={n} role="radio" aria-checked={c.s===n} aria-label={`S${n}`} onClick={()=>onS(c.id,n)} className={`h-8 rounded border text-[13px] ${c.s===n?'bg-accentdim border-accentline text-hi':'border-line bg-s2 text-mid hover:bg-s3'}`}>S{n}</button>)}
+   {[0,1,2,3,4,5,6].map(n=><button key={n} role="radio" aria-checked={c.s===n} aria-label={`S${n}`} onClick={()=>onS(c.id,'s',n)} className={`h-8 rounded border text-[13px] ${c.s===n?'bg-accentdim border-accentline text-hi':'border-line bg-s2 text-mid hover:bg-s3'}`}>S{n}</button>)}
+  </div>
+  <div id="wrk" className="text-xs text-lo mt-3 mb-1.5">Weapon Rank</div>
+  <div role="radiogroup" aria-labelledby="wrk" className="grid grid-cols-6 gap-1">
+   {[0,1,2,3,4,5].map(n=><button key={n} role="radio" aria-checked={c.r===n} aria-label={`R${n}`} onClick={()=>onS(c.id,'r',n)} className={`h-8 rounded border text-[13px] ${c.r===n?'bg-accentdim border-accentline text-hi':'border-line bg-s2 text-mid hover:bg-s3'}`}>R{n}</button>)}
   </div></div>
 }
 
@@ -125,11 +132,11 @@ const Sheet=forwardRef(({items,tdata,layout,group,view,head},ref)=>{
  const mini=teams&&!compact,cw=compact?122:mini?176:212,gap=compact?20:18   // fixed card width => card, star and text sizes are identical in every view
  const Cell=({c})=>compact
   ?<div className="min-w-0"><div className="relative aspect-square rounded-lg overflow-hidden bg-s3 border border-line"><Portrait c={c} kind="head"/><span className="absolute top-1.5 left-1.5 flex flex-col gap-1"><Badge e={c.element} cls="w-5 h-5"/><Weapon w={c.weapon} cls="w-5 h-5" pad="p-0.5"/></span>
-    <span className="absolute top-1.5 right-1.5"><Seq s={c.s} cls="text-[13px] px-1.5 h-5"/></span><Stars n={c.rarity} size={15} cls="pt-3"/></div>
+    <span className="absolute top-1.5 right-1.5"><Seq s={c.s} r={c.r} cls="text-[13px] px-1.5 h-5"/></span><Stars n={c.rarity} size={15} cls="pt-3"/></div>
     <div className="mt-2 text-[14px] font-medium truncate text-center">{c.name}</div></div>
   :<div className="min-w-0"><div className={`relative overflow-hidden border border-line bg-s3 ${mini?'rounded-lg':'rounded-xl'}`} style={{aspectRatio:'696/960'}}><Portrait c={c} kind="role"/>
     <span className={`absolute flex flex-col ${mini?'top-2 left-2 gap-1':'top-2.5 left-2.5 gap-1.5'}`}><Badge e={c.element} cls={mini?'w-6 h-6':'w-8 h-8'}/><Weapon w={c.weapon} cls={mini?'w-6 h-6':'w-8 h-8'} pad={mini?'p-1':'p-1.5'}/></span>
-    <span className={`absolute ${mini?'top-2 right-2':'top-2.5 right-2.5'}`}><Seq s={c.s} cls={mini?'text-[12px] px-1.5 h-5':'text-[15px] px-2 h-7'}/></span><Stars n={c.rarity} size={mini?22:26} cls={mini?'pb-2 pt-6':'pb-3 pt-8'}/></div>
+    <span className={`absolute ${mini?'top-2 right-2':'top-2.5 right-2.5'}`}><Seq s={c.s} r={c.r} cls={mini?'text-[12px] px-1.5 h-5':'text-[15px] px-2 h-7'}/></span><Stars n={c.rarity} size={mini?22:26} cls={mini?'pb-2 pt-6':'pb-3 pt-8'}/></div>
     <div className={`${mini?'mt-2 text-[17px]':'mt-2.5 text-[21px]'} font-medium truncate text-center`}>{c.name}</div></div>
  const Row=({list,g=gap})=><div className="flex flex-wrap" style={{gap:g}}>{list.map(c=><div key={c.id} style={{width:cw}}><Cell c={c}/></div>)}</div>
  const Slot=()=><div><div className={`border border-dashed border-linemid ${compact?'rounded-lg':'rounded-xl'}`} style={{aspectRatio:compact?'1':'696/960'}}/><div style={{height:compact?28:mini?34:39}}/></div>
@@ -178,7 +185,7 @@ export default function App(){
  useEffect(()=>{if(!menu)return;const c=()=>setMenu(null),k=e=>e.key==='Escape'&&c();addEventListener('click',c);addEventListener('keydown',k);return()=>{removeEventListener('click',c);removeEventListener('keydown',k)}},[menu])
  useEffect(()=>{const ids=new Set(roster.map(r=>r.id));setTeams(ts=>{let ch=false;const n=ts.map(t=>t.map(id=>id!=null&&!ids.has(id)?(ch=true,null):id));return ch?n:ts})},[roster])
  const byId=useMemo(()=>Object.fromEntries((chars||[]).map(c=>[c.id,c])),[chars])
- const items=roster.map(r=>({...byId[r.id],s:r.s})).filter(c=>c.id),owned=new Set(roster.map(r=>r.id)),loading=!chars,itemById=Object.fromEntries(items.map(c=>[c.id,c]))
+ const items=roster.map(r=>({...byId[r.id],s:r.s,r:r.r||0})).filter(c=>c.id),owned=new Set(roster.map(r=>r.id)),loading=!chars,itemById=Object.fromEntries(items.map(c=>[c.id,c]))
  const sorted=[...items].sort((a,b)=>b.s-a.s||b.rarity-a.rarity||a.name.localeCompare(b.name))
  const fc=rf.rar.length+rf.el.length+rf.wp.length,active=fc>0,[fp,setFp]=useState(null)
  const shown=sorted.filter(c=>(!rf.rar.length||rf.rar.includes(c.rarity))&&(!rf.el.length||rf.el.includes(c.element))&&(!rf.wp.length||rf.wp.includes(c.weapon)))
@@ -186,7 +193,7 @@ export default function App(){
  const say=m=>{setMsg('');setTimeout(()=>setMsg(m),40)}
  const add=c=>{setRoster(r=>r.some(x=>x.id===c.id)?r:[...r,{id:c.id,s:0}]);say(`${c.name} added`)}
  const remove=c=>{setRoster(r=>r.filter(x=>x.id!==c.id));setEdit(null);say(`${c.name} removed`)}
- const apply=list=>{setRoster(list);setPanel(null);say(`Imported ${list.length} characters`)}
+ const apply=list=>{setRoster(cur=>list.map(x=>({...x,r:cur.find(y=>y.id===x.id)?.r||0})));setPanel(null);say(`Imported ${list.length} characters`)}
  const open=(c,rect,el)=>setEdit(e=>e&&e.el===el?null:{id:c.id,rect,el}),ed=edit&&items.find(c=>c.id===edit.id)
  const card=c=><Card key={c.id} c={c} onOpen={open} onRemove={remove} onMenu={(c,x,y)=>setMenu({c,x,y})}/>
  const openAdd=()=>setPanel('add'),toggle=c=>owned.has(c.id)?remove(c):add(c)
@@ -223,7 +230,7 @@ export default function App(){
   {panel==='import'&&<Import chars={chars||[]} count={items.length} onApply={apply} onClose={()=>setPanel(null)}/>}
   {panel==='export'&&<Export items={sorted} view={view} teams={exportTeams} say={say} onClose={()=>setPanel(null)}/>}
   {slot&&<SlotPicker items={sorted} teams={teams} slot={slot} onPick={pick} onClose={()=>setSlot(null)} onAddChars={()=>{setSlot(null);setPanel('add')}}/>}
-  {ed&&<Edit c={ed} rect={edit.rect} onS={(id,s)=>setRoster(r=>r.map(x=>x.id===id?{...x,s}:x))} onClose={()=>setEdit(null)}/>}
+  {ed&&<Edit c={ed} el={edit.el} onS={(id,k,v)=>setRoster(r=>r.map(x=>x.id===id?{...x,[k]:v}:x))} onClose={()=>setEdit(null)}/>}
   {menu&&<div role="menu" style={{left:Math.min(menu.x,innerWidth-140),top:menu.y}} className="fixed z-50 bg-s3 border border-linemid rounded p-1 a-pm"><button role="menuitem" autoFocus className="btn !border-0 !bg-transparent w-full" onClick={()=>menu.slot?clearSlot(...menu.slot):remove(menu.c)}><Trash2 size={14} aria-hidden="true"/>{menu.slot?'Remove from team':`Remove ${menu.c.name}`}</button></div>}
   <div role="status" aria-live="polite" className="sr-only">{msg}</div>
  </>

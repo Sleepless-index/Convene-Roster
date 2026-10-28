@@ -19,7 +19,8 @@ export function useDialog(ref,onClose){
 export function Badge({e,cls='w-6 h-6'}){return <span role="img" aria-label={e} className={`${cls} block rounded-full bg-bg/60 shadow-[0_0_0_1px_hsl(var(--bg)/0.6)]`}><img src={BASE+`assets/elements/${e}.webp`} alt="" draggable={false} className="w-full h-full rounded-full"/></span>}
 export function Weapon({w,cls='w-6 h-6',pad='p-1'}){return <span role="img" aria-label={w} className={`${cls} ${pad} grid place-items-center rounded bg-bg/75 border border-line`}><img src={BASE+`assets/weapons/${w}.webp`} alt="" draggable={false} className="w-full h-full object-contain"/></span>}
 export function Rarity({n,size=11}){return <img src={BASE+`assets/stars/${n}.png`} alt={`${n} star`} draggable={false} style={{height:size}} className="block w-auto"/>}
-export const Seq=({s,cls='text-[12px] px-1.5 h-[18px]'})=>s?<span className={`${cls} shrink-0 inline-flex items-center rounded border font-semibold tabular-nums ${s===6?'bg-accent border-accent text-bg':'bg-s4 border-linemid text-hi'}`}>S{s}</span>:null
+// Combined tag: sequence + weapon rank, e.g. S2R3. Zero parts are omitted; nothing renders when both are 0.
+export const Seq=({s,r,cls='text-[12px] px-1.5 h-[18px]'})=>{const t=(s?`S${s}`:'')+(r?`R${r}`:'');return t?<span title={[s?`Sequence ${s}`:'',r?`Weapon rank ${r}`:''].filter(Boolean).join(', ')} className={`${cls} shrink-0 inline-flex items-center rounded border font-semibold tabular-nums ${s===6?'bg-accent border-accent text-bg':'bg-s4 border-linemid text-hi'}`}>{t}</span>:null}
 export const Stars=({n,size,cls=''})=><span className={`absolute inset-x-0 bottom-0 flex justify-center pb-1.5 pt-5 bg-gradient-to-t from-bg/80 to-transparent pointer-events-none ${cls}`}><Rarity n={n} size={size}/></span>
 export function Portrait({c,kind}){
  const src=c[kind],[st,setSt]=useState(src?'load':'ph')
