@@ -43,6 +43,7 @@
   {"Id": 1302, "Name": "Yinlin", "QualityId": 5, "Element": "Electro", "WeaponType": "Rectifier"},
   {"Id": 1507, "Name": "Zani", "QualityId": 5, "Element": "Spectro", "WeaponType": "Gauntlets"},
   {"Id": 1105, "Name": "Zhezhi", "QualityId": 5, "Element": "Glacio", "WeaponType": "Rectifier"},
+  {"Id": 1512, "Name": "Lily", "QualityId": 5, "Element": "Spectro", "WeaponType": "Pistols"},
   {"Id": 1403, "Name": "Aalto", "QualityId": 4, "Element": "Aero", "WeaponType": "Pistols"},
   {"Id": 1103, "Name": "Baizhi", "QualityId": 4, "Element": "Glacio", "WeaponType": "Rectifier"},
   {"Id": 1307, "Name": "Buling", "QualityId": 4, "Element": "Electro", "WeaponType": "Rectifier"},
